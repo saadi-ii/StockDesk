@@ -1,98 +1,197 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { File, Paths } from 'expo-file-system';
+import { Link } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+const productFile = new File(Paths.document, "product.txt");
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
+
+const readProducts = (): { name: string; quantity: number }[] => {
+  return JSON.parse(productFile.textSync());
+};
+
+const index = () => {
+  const [Products, setProducts] = useState<{ name: string; quantity: number }[]>(readProducts);
+  const [Name, setName] = useState("");
+  const [Quantity, setQuantity] = useState("");
+
+  useEffect(() => {
+    if (!productFile.exists) productFile.create();
+    productFile.write(JSON.stringify(Products));
+  }, [Products]);
+
+  const addData = () => {
+    if (Name && Quantity) {
+      if (Products.some((product) => product.name === Name)) {
+        setProducts(
+          Products.map((product) =>
+            product.name === Name
+              ? { ...product, quantity: parseInt(Quantity) }
+              : product
+          )
+        );
+      } else {
+        setProducts([...Products, { name: Name, quantity: parseInt(Quantity) }]);
+      }
+      setName("");
+      setQuantity("");
+    }
   }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
+    <View style={styles.container}>
+      <Text style={styles.heading}>Dashboard</Text>
+      <View style={{
+        flexDirection: 'row',
+        gap: 10
+      }}>
+        <Link href="/" asChild>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>All Items</Text>
+          </Pressable>
+        </Link>
+        <Link href="/LowStock" asChild>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>Low Stock</Text>
+          </Pressable>
+        </Link>
+        <Link href="/Create" asChild>
+          <Pressable style={styles.button}>
+            <Text style={styles.buttonText}>Create</Text>
+          </Pressable>
+        </Link>
+      </View>
+
+
+      <View style={styles.inputContainer}>
+        <TextInput
+          placeholder="Product Name"
+          style={styles.inputField}
+          value={Name}
+          onChangeText={setName}
+          placeholderTextColor="#afb1af"
+        />
+        <TextInput
+          placeholder="Product Quantity"
+          style={styles.inputField}
+          value={Quantity}
+          onChangeText={setQuantity}
+          placeholderTextColor="#afb1af"
+        />
+        <Pressable style={styles.button} onPress={() => {
+          addData();
+        }}>
+          <Text style={styles.buttonText}>Add Product</Text>
+        </Pressable>
+      </View>
+
+
+      <View>
+        <Text style={styles.heading}>All Products in the stock</Text>
+
+        <FlatList
+          data={Products}
+          style={styles.list}
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.card,
+                item.quantity < 20 && { backgroundColor: "#fcd9d9" }
+              ]}
+            >
+              <Text style={styles.cardText}>{item.name}</Text>
+              <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+                <Text style={styles.cardText}>{item.quantity}</Text>
+                <Pressable
+                  onPress={() => {
+                    setName(item.name);
+                    setQuantity(item.quantity.toString());
+                  }}
+                >
+                  <Text>Edit</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setProducts(Products.filter((product) => product.name !== item.name));
+                  }}
+                >
+                  <Text>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+          keyExtractor={(item, index) => index.toString()}
+        />
+      </View>
+    </View>
+  )
 }
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
+export default index
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    margin: 20,
+    marginTop: 50,
+    width: "100%",
+    height: "100%"
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+  heading: {
+    fontSize: 25,
+    fontWeight: "bold",
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  button: {
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "#91d191",
+    padding: 5,
+    paddingHorizontal: 10,
+    justifyContent: "center",
+    alignItems: "center"
   },
-  title: {
-    textAlign: 'center',
+
+  buttonText: {
+    fontSize: 15,
+    color: "#91d191",
   },
-  code: {
-    textTransform: 'uppercase',
+
+  inputContainer: {
+    marginTop: 20,
+    width: "90%",
+    padding: 5,
+    paddingHorizontal: 10,
+    gap: 10,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+
+  inputField: {
+    width: "100%",
+    height: 40,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#91d191",
+    borderRadius: 5,
+    color: "black",
   },
-});
+
+  card: {
+    width: "100%",
+    height: 40,
+    paddingVertical: -5,
+    paddingHorizontal: 10,
+    backgroundColor: "#d5fdd5",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 5,
+    marginBottom: 5,
+  },
+
+  cardText: {
+    fontSize: 15,
+    color: "black"
+  },
+  list: {
+    width: "90%",
+    marginTop: 20
+  }
+
+})
