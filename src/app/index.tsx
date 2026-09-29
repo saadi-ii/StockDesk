@@ -7,6 +7,7 @@ const productFile = new File(Paths.document, "product.txt");
 
 
 const readProducts = (): { name: string; quantity: number }[] => {
+  if (!productFile.exists) return [];
   return JSON.parse(productFile.textSync());
 };
 
