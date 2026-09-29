@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "StockDesk",
-    "slug": "2-practice",
+    "slug": "stockdesk",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -39,12 +39,12 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "saadi-ii",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "5b5f6d0c-2b61-4af5-922e-86420e760d18"
+        "projectId": "ee9e14e2-50e1-4c00-9108-700a82ec2b62"
       }
-    },
-    "owner": "saadi-ii"
+    }
   }
 }
